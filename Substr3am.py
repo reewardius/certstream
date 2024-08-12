@@ -8,10 +8,6 @@ import argparse
 import os
 from contextlib import contextmanager
 
-from sqlalchemy import create_engine, update
-from declarative_sql import Subdomain, Base
-from sqlalchemy.orm import sessionmaker
-
 @contextmanager
 def suppress_stderr():
     original_stderr = sys.stderr
@@ -48,6 +44,8 @@ def print_callback(message, context):
         domains = message['data']['leaf_cert']['all_domains']
         domain_filter = parse_args().filter
 
+        unique_subdomains = set()  # Set to store unique subdomains
+
         for domain in domains:
             extract = tldextract.extract(domain)
             computed_domain = extract.domain + '.' + extract.suffix
@@ -72,43 +70,15 @@ def print_callback(message, context):
                             i += 1
 
                     if i == 0:
-                        engine = create_engine('sqlite:///subdomains.db')
-                        Base.metadata.bind = engine
-                        Session = sessionmaker()
-                        Session.configure(bind=engine)
-                        session = Session()
-
-                        subdomain_exists = session.query(Subdomain).filter_by(subdomain=subdomain).first()
-                        
-                        if not subdomain_exists:
-                            subdomain_new = Subdomain(subdomain=subdomain, count=1)
-                            session.add(subdomain_new)
-                            session.commit()
+                        # Add the subdomain to the set
+                        if subdomain not in unique_subdomains:
+                            unique_subdomains.add(subdomain)
+                            # Output the subdomain to the console
                             print("[+] " + subdomain)
-                        
-                        if subdomain_exists:
-                            counter = subdomain_exists.count + 1
-                            session.query(Subdomain).filter(Subdomain.id == subdomain_exists.id).\
-                                update({'count': counter})
-                            session.commit()
-                            if counter % 50 == 0:
-                                print("[#] " + subdomain + " (seen " + str(counter) + " times)")
 
 def dump():
-    engine = create_engine('sqlite:///subdomains.db')
-    Base.metadata.bind = engine
-    Session = sessionmaker()
-    Session.configure(bind=engine)
-    session = Session()
-
-    subdomains = session.execute("SELECT * FROM subdomains ORDER BY count DESC").fetchall()
-
-    if len(subdomains) > 0:
-        with open("names.txt", "w") as f:
-            for subdomain in subdomains:
-                f.write(subdomain.subdomain)
-                f.write("\r\n")
-    sys.exit('names.txt has been written')
+    # Not used anymore, remove if not needed
+    sys.exit('Dump functionality removed')
 
 def parse_args():
     parser = argparse.ArgumentParser()
