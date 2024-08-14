@@ -20,10 +20,8 @@ def suppress_stderr():
 
 def print_callback(message, context):
     subdomains_to_ignore = [
-        "www",
         "*",
         "azuregateway",
-        "direwolf",
         "devshell-vm-",
         "device-local",
         "-local",
@@ -44,7 +42,7 @@ def print_callback(message, context):
         domains = message['data']['leaf_cert']['all_domains']
         domain_filter = parse_args().filter
 
-        unique_subdomains = set()  # Set to store unique subdomains
+        unique_subdomains = set()
 
         for domain in domains:
             extract = tldextract.extract(domain)
@@ -70,15 +68,9 @@ def print_callback(message, context):
                             i += 1
 
                     if i == 0:
-                        # Add the subdomain to the set
                         if subdomain not in unique_subdomains:
                             unique_subdomains.add(subdomain)
-                            # Output the subdomain to the console
                             print("[+] " + subdomain)
-
-def dump():
-    # Not used anymore, remove if not needed
-    sys.exit('Dump functionality removed')
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -98,13 +90,5 @@ def main():
     with suppress_stderr():
         certstream.listen_for_events(print_callback, url='wss://certstream.calidog.io/')
 
-def interactive():
-    args = parse_args()
-
-    if args.dump:
-        dump()
-
-    main()
-
 if __name__ == "__main__":
-    interactive()
+    main()
