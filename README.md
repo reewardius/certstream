@@ -36,6 +36,7 @@ sudo pip3 install -r requirements.txt
 * To only return results for a particular list of domains
 
 ```python3 Substr3am.py -f google.com google.cn microsoft.com uber.com```
+
 ```python3 Substr3am.py -F domains.txt```
 
 * To return results only for a specific list of domains and send them to Telegram
