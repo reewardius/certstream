@@ -6,6 +6,7 @@ import tldextract
 import re
 import argparse
 import os
+import requests
 from contextlib import contextmanager
 
 @contextmanager
@@ -18,7 +19,19 @@ def suppress_stderr():
         sys.stderr.close()
         sys.stderr = original_stderr
 
-def print_callback(message, context, output_file):
+def send_to_telegram(telegram_id, telegram_key, message):
+    url = f"https://api.telegram.org/bot{telegram_key}/sendMessage"
+    data = {
+        "chat_id": telegram_id,
+        "text": message
+    }
+    try:
+        response = requests.post(url, data=data)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending to Telegram: {e}")
+
+def print_callback(message, context, output_file, telegram_id=None, telegram_key=None):
     subdomains_to_ignore = [
         "*",
         "azuregateway",
@@ -76,26 +89,41 @@ def print_callback(message, context, output_file):
                                     file.write(output + "\n")
                             else:
                                 print(output)
+                            
+                            if telegram_id and telegram_key:
+                                send_to_telegram(telegram_id, telegram_key, output)
 
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', '--filter', help="A space-separated list of domain names to filter for (e.g. 'google.com' or 'tesco.co.uk tesco.com harrods.com'). BE PATIENT.", nargs='+')
     parser.add_argument('-F', '--file', help="A file containing a list of domains to filter for, one per line.")
     parser.add_argument('-o', '--output', help="Output file to save the results.")
-    
+    parser.add_argument('-t', '--telegram', help="Send results to Telegram.", action='store_true')
+    parser.add_argument('-ti', '--telegram-id', help="Telegram chat ID to send results to.")
+    parser.add_argument('-ty', '--telegram-key', help="Telegram bot HTTP API token.")
+
     args = parser.parse_args()
-    
+
     if args.file:
         with open(args.file, 'r') as f:
             args.filter = [line.strip() for line in f]
     
+    if args.telegram and (not args.telegram_id or not args.telegram_key):
+        parser.error("When using -t telegram, --telegram-id or -ti and --telegram-key or -ty must be provided.")
+
     return args
 
 def main():
     args = parse_args()
     output_file = args.output if args.output else None
+    telegram_id = args.telegram_id if args.telegram else None
+    telegram_key = args.telegram_key if args.telegram else None
+
     with suppress_stderr():
-        certstream.listen_for_events(lambda message, context: print_callback(message, context, output_file), url='wss://certstream.calidog.io/')
+        certstream.listen_for_events(lambda message, context: print_callback(
+            message, context, output_file, telegram_id, telegram_key), 
+            url='wss://certstream.calidog.io/'
+        )
 
 if __name__ == "__main__":
     main()
