@@ -18,7 +18,7 @@ def suppress_stderr():
         sys.stderr.close()
         sys.stderr = original_stderr
 
-def print_callback(message, context):
+def print_callback(message, context, output_file):
     subdomains_to_ignore = [
         "*",
         "azuregateway",
@@ -70,13 +70,18 @@ def print_callback(message, context):
                     if i == 0:
                         if subdomain not in unique_subdomains:
                             unique_subdomains.add(subdomain)
-                            print("[+] " + subdomain)
+                            output = subdomain
+                            if output_file:
+                                with open(output_file, 'a') as file:
+                                    file.write(output + "\n")
+                            else:
+                                print(output)
 
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-d', '--dump', help="Dump the list of collected subdomains to names.txt", action='store_true')
     parser.add_argument('-f', '--filter', help="A space-separated list of domain names to filter for (e.g. 'google.com' or 'tesco.co.uk tesco.com harrods.com'). BE PATIENT.", nargs='+')
     parser.add_argument('-F', '--file', help="A file containing a list of domains to filter for, one per line.")
+    parser.add_argument('-o', '--output', help="Output file to save the results.")
     
     args = parser.parse_args()
     
@@ -87,8 +92,10 @@ def parse_args():
     return args
 
 def main():
+    args = parse_args()
+    output_file = args.output if args.output else None
     with suppress_stderr():
-        certstream.listen_for_events(print_callback, url='wss://certstream.calidog.io/')
+        certstream.listen_for_events(lambda message, context: print_callback(message, context, output_file), url='wss://certstream.calidog.io/')
 
 if __name__ == "__main__":
     main()
