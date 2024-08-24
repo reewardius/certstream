@@ -42,7 +42,6 @@ def print_callback(message, context, output_file, telegram_id=None, telegram_key
     ]
 
     subdomains_regex_to_ignore = [
-        "[a-f0-9]{24}",
         "device[a-f0-9]{7}-[a-f0-9]{8}",
         "[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
         "device-[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}",
